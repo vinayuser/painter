@@ -1,0 +1,9 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If someone opens /public/... redirect to the clean URL
+    RewriteRule ^public/(.*)$ /$1 [L,R=301]
+
+    # Serve everything through Laravel's public/ folder (no /public in URL)
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

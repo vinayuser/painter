@@ -1,0 +1,1443 @@
+{
+	"info": {
+		"_postman_id": "paint-store-api-collection",
+		"name": "Paint Store API",
+		"description": "Complete REST API collection for Paint Store Management System.\n\n## Setup\n1. Import this collection into Postman\n2. Set `base_url` (default: https://painter.rainbowstonerealestate.com/api/v1; local: http://127.0.0.1:8000/api/v1)\n3. Login sends OTP — run **Verify OTP - Customer** to save `customer_token`\n\n## OTP Auth Flow\n1. Register or Login → returns `session_id`\n2. POST /auth/verify-otp with phone, otp, session_id, role\n3. Dev mode (no TWOFACTOR_API_KEY): use OTP `123456`\n\n## Single-vendor cart\n- Cart may only contain products from **one vendor** (or platform products with no vendor)\n- Adding from a different vendor → **409** `error: different_vendor`\n- Use **Add to Cart (Replace Vendor)** with `\"replace\": true` to clear cart and switch vendor\n- Checkout creates **one order** (not split by vendor)\n- Test: add `product_id` 1 (vendor), then try `platform_product_id` 3 (platform) without replace\n\n## Sample product IDs (after seed)\n| ID | Product | Vendor |\n|----|---------|--------|\n| 1 | Royal Emulsion White | Sharma Paint Supplies |\n| 3 | Wall Primer 10L | Paint Store (platform) |\n\n## Roles\n- **Customer** → POST /auth/login + verify-otp (role: customer)\n- **Painter** → POST /auth/staff/login (role: painter) + verify-otp\n- **Delivery** → POST /auth/staff/login (role: delivery_agent) + verify-otp\n- **Vendor** → Website panel /vendor (email login)\n- **Admin** → Website only at /admin\n\n## Painter work flow\naccept → start → before-images → after-images (or use /complete for both at once)\n\n## Sample phones\n| Role | Phone |\n|------|-------|\n| Customer | 9876543210 |\n| Painter | 9876543211 |\n| Delivery | 9876543212 |",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "base_url", "value": "https://painter.rainbowstonerealestate.com/api/v1" },
+		{ "key": "customer_token", "value": "" },
+		{ "key": "painter_token", "value": "" },
+		{ "key": "delivery_token", "value": "" },
+		{ "key": "vendor_token", "value": "" },
+		{ "key": "otp_session_id", "value": "" },
+		{ "key": "product_id", "value": "1" },
+		{ "key": "platform_product_id", "value": "3" },
+		{ "key": "category_id", "value": "1" },
+		{ "key": "painter_id", "value": "3" },
+		{ "key": "order_id", "value": "1" },
+		{ "key": "address_id", "value": "1" },
+		{ "key": "booking_id", "value": "1" }
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const json = pm.response.json();",
+									"    if (json.session_id) pm.collectionVariables.set('otp_session_id', json.session_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"phone\": \"9876543299\",\n  \"email\": \"john@example.com\",\n  \"address\": \"123 Main Street, Mumbai\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/register"
+					}
+				},
+				{
+					"name": "Register Painter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const json = pm.response.json();",
+									"    if (json.session_id) pm.collectionVariables.set('otp_session_id', json.session_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Rajesh Kumar\",\n  \"phone\": \"9876543298\",\n  \"experience_years\": 5,\n  \"cost_per_hour\": 500,\n  \"aadhar_number\": \"987654321098\",\n  \"specialization\": \"Residential Painting\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/staff/register"
+					}
+				},
+				{
+					"name": "Login Customer (Send OTP)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    if (json.session_id) pm.collectionVariables.set('otp_session_id', json.session_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543210\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/login"
+					}
+				},
+				{
+					"name": "Login Staff - Painter (Send OTP)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    if (json.session_id) pm.collectionVariables.set('otp_session_id', json.session_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543211\",\n  \"role\": \"painter\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/staff/login"
+					}
+				},
+				{
+					"name": "Login Staff - Delivery (Send OTP)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    if (json.session_id) pm.collectionVariables.set('otp_session_id', json.session_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543212\",\n  \"role\": \"delivery_agent\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/staff/login"
+					}
+				},
+				{
+					"name": "Verify OTP - Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    pm.collectionVariables.set('customer_token', json.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"123456\",\n  \"session_id\": \"{{otp_session_id}}\",\n  \"role\": \"customer\",\n  \"fcm_token\": \"PASTE_DEVICE_FCM_TOKEN_HERE\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/verify-otp"
+					}
+				},
+				{
+					"name": "Verify OTP - Painter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    pm.collectionVariables.set('painter_token', json.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543211\",\n  \"otp\": \"123456\",\n  \"session_id\": \"{{otp_session_id}}\",\n  \"role\": \"painter\",\n  \"fcm_token\": \"PASTE_DEVICE_FCM_TOKEN_HERE\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/verify-otp"
+					}
+				},
+				{
+					"name": "Verify OTP - Delivery",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    pm.collectionVariables.set('delivery_token', json.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543212\",\n  \"otp\": \"123456\",\n  \"session_id\": \"{{otp_session_id}}\",\n  \"role\": \"delivery_agent\",\n  \"fcm_token\": \"PASTE_DEVICE_FCM_TOKEN_HERE\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/verify-otp"
+					}
+				},
+				{
+					"name": "Resend OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    if (json.session_id) pm.collectionVariables.set('otp_session_id', json.session_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"9876543210\",\n  \"purpose\": \"login\",\n  \"role\": \"customer\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/resend-otp"
+					}
+				},
+				{
+					"name": "Get Me",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/auth/me"
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    if (json.access_token) pm.collectionVariables.set('customer_token', json.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/auth/refresh",
+						"description": "Refresh JWT. Works with an expired token (within refresh window). Saves new token to `customer_token`."
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/auth/logout"
+					}
+				},
+				{
+					"name": "Update FCM Token",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fcm_token\": \"PASTE_DEVICE_FCM_TOKEN_HERE\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{base_url}}/auth/fcm-token",
+						"description": "Save/refresh device FCM token and subscribe to the role global topic (paint_store_customers / painters / delivery_agents / vendors / admins)."
+					}
+				}
+			]
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "List My Notifications",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": {
+							"raw": "{{base_url}}/notifications?unread=&per_page=20",
+							"host": ["{{base_url}}"],
+							"path": ["notifications"],
+							"query": [
+								{ "key": "unread", "value": "1", "description": "Set to 1 for unread only", "disabled": true },
+								{ "key": "type", "value": "order_packed", "disabled": true },
+								{ "key": "per_page", "value": "20" }
+							]
+						},
+						"description": "In-app notification inbox. Response includes `meta.unread_count`. Works for customer, painter, delivery_agent, and vendor JWT tokens."
+					}
+				},
+				{
+					"name": "Unread Count",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/notifications/unread-count"
+					}
+				},
+				{
+					"name": "Mark Notification Read",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/notifications/1/read"
+					}
+				},
+				{
+					"name": "Mark All Notifications Read",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/notifications/read-all"
+					}
+				}
+			]
+		},
+		{
+			"name": "Public - Products",
+			"item": [
+				{
+					"name": "List Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    const first = json.data?.[0];",
+									"    if (first?.id) pm.collectionVariables.set('product_id', first.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": {
+							"raw": "{{base_url}}/products?search=&category_id=&per_page=15",
+							"host": ["{{base_url}}"],
+							"path": ["products"],
+							"query": [
+								{ "key": "search", "value": "" },
+								{ "key": "category_id", "value": "" },
+								{ "key": "min_price", "value": "", "disabled": true },
+								{ "key": "max_price", "value": "", "disabled": true },
+								{ "key": "sort_by", "value": "name", "disabled": true },
+								{ "key": "sort_dir", "value": "asc", "disabled": true },
+								{ "key": "per_page", "value": "15" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Product",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/products/{{product_id}}"
+					}
+				},
+				{
+					"name": "List Categories",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/categories"
+					}
+				},
+				{
+					"name": "Products by Category",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/categories/{{category_id}}/products"
+					}
+				}
+			]
+		},
+		{
+			"name": "Customer",
+			"item": [
+				{
+					"name": "Flow — Single Vendor Cart to Order",
+					"description": "Run these requests in order (Collection Runner):\n1. **Auth → Login Customer** then **Verify OTP - Customer**\n2. **Add to Cart** (product_id 1 — vendor)\n3. **Add to Cart (Different Vendor — 409)** — confirms single-vendor rule\n4. **Add to Cart (Replace Vendor)** — switch to platform product\n5. **Checkout Preview** — verify vendor_label\n6. **Place Order (Cash on Delivery)** or saved address variant\n7. **Order History (By ID)** — track order",
+					"item": [
+						{
+							"name": "→ 1. Run Auth Login + Verify OTP first",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/categories",
+								"description": "Placeholder — use **Auth → Login Customer** and **Verify OTP - Customer** before this flow."
+							}
+						},
+						{
+							"name": "→ 2. Add Vendor Product",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"product_id\": 1,\n  \"quantity\": 1\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/cart"
+							}
+						},
+						{
+							"name": "→ 3. Expect 409 (Different Vendor)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('409 different_vendor', () => {",
+											"    pm.response.to.have.status(409);",
+											"    pm.expect(pm.response.json().error).to.eql('different_vendor');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"product_id\": 3,\n  \"quantity\": 1\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/cart"
+							}
+						},
+						{
+							"name": "→ 4. Replace Cart (Platform Product)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"product_id\": 3,\n  \"quantity\": 1,\n  \"replace\": true\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/cart"
+							}
+						},
+						{
+							"name": "→ 5. Checkout Preview",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/cart/checkout"
+							}
+						},
+						{
+							"name": "→ 6. Place Order (COD)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const order = pm.response.json().data;",
+											"    if (order?.id) pm.collectionVariables.set('order_id', order.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"shipping_address\": \"123 Main Street, Mumbai, 400001\",\n  \"shipping_phone\": \"9876543210\",\n  \"payment_method\": \"cod\",\n  \"notes\": \"Flow test order\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/orders"
+							}
+						}
+					]
+				},
+				{
+					"name": "Profile",
+					"item": [
+						{
+							"name": "Get Profile",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/profile"
+							}
+						},
+						{
+							"name": "Update Profile",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "name", "value": "John Customer", "type": "text" },
+										{ "key": "phone", "value": "9876543210", "type": "text" },
+										{ "key": "address", "value": "123 Main Street, Mumbai", "type": "text" },
+										{ "key": "avatar", "type": "file", "src": [], "disabled": true }
+									]
+								},
+								"url": "{{base_url}}/customer/profile"
+							}
+						}
+					]
+				},
+				{
+					"name": "Delivery Addresses",
+					"item": [
+						{
+							"name": "List Addresses",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    const json = pm.response.json();",
+											"    const defaultAddr = json.data?.find(a => a.is_default) || json.data?.[0];",
+											"    if (defaultAddr?.id) pm.collectionVariables.set('address_id', defaultAddr.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/addresses"
+							}
+						},
+						{
+							"name": "Add Address",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const json = pm.response.json();",
+											"    if (json.data?.id) pm.collectionVariables.set('address_id', json.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"label\": \"Home\",\n  \"recipient_name\": \"John Doe\",\n  \"phone\": \"9876543210\",\n  \"address_line1\": \"123 Main Street\",\n  \"address_line2\": \"Apt 4B\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"pincode\": \"400001\",\n  \"is_default\": true\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/addresses"
+							}
+						},
+						{
+							"name": "Get Address",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/addresses/{{address_id}}"
+							}
+						},
+						{
+							"name": "Update Address",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "PUT",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"label\": \"Office\",\n  \"recipient_name\": \"John Doe\",\n  \"phone\": \"9876543210\",\n  \"address_line1\": \"456 Business Park\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"pincode\": \"400002\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/addresses/{{address_id}}"
+							}
+						},
+						{
+							"name": "Set Default Address",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/addresses/{{address_id}}/default"
+							}
+						},
+						{
+							"name": "Delete Address",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "DELETE",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/addresses/{{address_id}}"
+							}
+						}
+					]
+				},
+				{
+					"name": "Cart",
+					"description": "Single-vendor cart: all items must be from one vendor (or platform). Use `replace: true` to switch vendors. Response includes `summary.vendor` and `summary.vendor_label`.",
+					"item": [
+						{
+							"name": "Get Cart",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"pm.test('Summary has vendor fields', () => {",
+											"    pm.expect(json.summary).to.have.property('vendor_label');",
+											"    pm.expect(json.summary).to.have.property('vendor');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/cart",
+								"description": "Returns cart items and summary with `vendor`, `vendor_label`, `subtotal`, `item_count`. Each product includes `vendor` object."
+							}
+						},
+						{
+							"name": "Add to Cart",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const json = pm.response.json();",
+											"    pm.test('Product has vendor', () => pm.expect(json.data.product).to.have.property('vendor'));",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"product_id\": {{product_id}},\n  \"quantity\": 2\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/cart",
+								"description": "Add product to cart. Default `product_id` 1 = vendor product (Sharma Paint Supplies)."
+							}
+						},
+						{
+							"name": "Add to Cart (Different Vendor — 409)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));",
+											"const json = pm.response.json();",
+											"pm.test('different_vendor error', () => {",
+											"    pm.expect(json.error).to.eql('different_vendor');",
+											"    pm.expect(json).to.have.property('cart_vendor');",
+											"    pm.expect(json).to.have.property('product_vendor');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"product_id\": {{platform_product_id}},\n  \"quantity\": 1\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/cart",
+								"description": "Run after **Add to Cart** (vendor product). Uses `platform_product_id` (3) — platform-owned product. Expects 409 with `error: different_vendor`."
+							}
+						},
+						{
+							"name": "Add to Cart (Replace Vendor)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status 201', () => pm.response.to.have.status(201));",
+											"if (pm.response.code === 201) {",
+											"    const json = pm.response.json();",
+											"    if (json.data?.product?.id) pm.collectionVariables.set('product_id', json.data.product.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"product_id\": {{platform_product_id}},\n  \"quantity\": 1,\n  \"replace\": true\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/cart",
+								"description": "Clears cart and adds product from a different vendor. Set `replace: true` when user confirms switching stores."
+							}
+						},
+						{
+							"name": "Increment Quantity",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/cart/{{product_id}}/increment"
+							}
+						},
+						{
+							"name": "Decrement Quantity",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/cart/{{product_id}}/decrement"
+							}
+						},
+						{
+							"name": "Update Cart Quantity",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "PUT",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"quantity\": 3\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/cart/{{product_id}}"
+							}
+						},
+						{
+							"name": "Remove from Cart",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "DELETE",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/cart/{{product_id}}"
+							}
+						},
+						{
+							"name": "Checkout Preview",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Status 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"pm.test('Checkout includes vendor', () => {",
+											"    pm.expect(json.data).to.have.property('vendor_label');",
+											"    pm.expect(json.data).to.have.property('items');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/cart/checkout",
+								"description": "Preview checkout: items, vendor, totals, saved addresses, default address."
+							}
+						}
+					]
+				},
+				{
+					"name": "Orders & Payment",
+					"description": "Checkout creates a single order (`data` is one object, not an array). `order_id` is saved automatically from place-order responses.",
+					"item": [
+						{
+							"name": "Place Order (Saved Address)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const json = pm.response.json();",
+											"    pm.test('Single order returned', () => {",
+											"        pm.expect(json.data).to.be.an('object');",
+											"        pm.expect(json.data).to.have.property('order_number');",
+											"    });",
+											"    const order = json.data;",
+											"    if (order?.id) pm.collectionVariables.set('order_id', order.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"address_id\": {{address_id}},\n  \"payment_method\": \"online\",\n  \"notes\": \"Deliver before 5 PM\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/orders"
+							}
+						},
+						{
+							"name": "Place Order (Online Payment)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const json = pm.response.json();",
+											"    const order = json.data;",
+											"    if (order?.id) pm.collectionVariables.set('order_id', order.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"shipping_address\": \"123 Main Street, Mumbai, 400001\",\n  \"shipping_phone\": \"9876543210\",\n  \"payment_method\": \"online\",\n  \"notes\": \"Deliver before 5 PM\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/orders"
+							}
+						},
+						{
+							"name": "Place Order (Cash on Delivery)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const json = pm.response.json();",
+											"    const order = json.data;",
+											"    if (order?.id) pm.collectionVariables.set('order_id', order.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"shipping_address\": \"123 Main Street, Mumbai, 400001\",\n  \"shipping_phone\": \"9876543210\",\n  \"payment_method\": \"cod\",\n  \"notes\": \"Cash on delivery\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/orders"
+							}
+						},
+						{
+							"name": "Order History (List)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/orders"
+							}
+						},
+						{
+							"name": "Order History (By ID)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/orders/{{order_id}}"
+							}
+						},
+						{
+							"name": "Initiate Payment (Razorpay)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/orders/{{order_id}}/pay"
+							}
+						},
+						{
+							"name": "Verify Payment",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"razorpay_order_id\": \"order_xxx\",\n  \"razorpay_payment_id\": \"pay_xxx\",\n  \"razorpay_signature\": \"signature_xxx\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/customer/payments/verify"
+							}
+						}
+					]
+				},
+				{
+					"name": "Painters & Bookings",
+					"item": [
+						{
+							"name": "List Painters",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/painters"
+							}
+						},
+						{
+							"name": "Get Painter Detail",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/painters/{{painter_id}}"
+							}
+						},
+						{
+							"name": "List My Bookings",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/bookings"
+							}
+						},
+						{
+							"name": "Book Painter",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const json = pm.response.json();",
+											"    if (json.data?.id) pm.collectionVariables.set('booking_id', json.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "painter_id", "value": "{{painter_id}}", "type": "text" },
+										{ "key": "booking_date", "value": "2026-07-01", "type": "text" },
+										{ "key": "booking_time", "value": "10:00", "type": "text" },
+										{ "key": "address", "value": "123 Main Street, Mumbai", "type": "text" },
+										{ "key": "notes", "value": "Living room painting needed", "type": "text" },
+										{ "key": "reference_images[]", "type": "file", "src": [], "disabled": true }
+									]
+								},
+								"url": "{{base_url}}/customer/bookings"
+							}
+						},
+						{
+							"name": "Get Booking Detail",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/customer/bookings/{{booking_id}}"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Painter",
+			"item": [
+				{
+					"name": "Profile",
+					"item": [
+						{
+							"name": "Get Profile",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/painter/profile"
+							}
+						},
+						{
+							"name": "Update Profile",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "name", "value": "Raj Painter", "type": "text" },
+										{ "key": "phone", "value": "9876543211", "type": "text" },
+										{ "key": "bio", "value": "10+ years professional painting experience", "type": "text" },
+										{ "key": "avatar", "type": "file", "src": [], "disabled": true },
+										{ "key": "portfolio_images[]", "type": "file", "src": [], "disabled": true }
+									]
+								},
+								"url": "{{base_url}}/painter/profile"
+							}
+						}
+					]
+				},
+				{
+					"name": "Bookings",
+					"item": [
+						{
+							"name": "List Bookings (All)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/painter/bookings"
+							}
+						},
+						{
+							"name": "List Bookings (New)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": {
+									"raw": "{{base_url}}/painter/bookings?filter=new",
+									"host": ["{{base_url}}"],
+									"path": ["painter", "bookings"],
+									"query": [{ "key": "filter", "value": "new" }]
+								}
+							}
+						},
+						{
+							"name": "List Bookings (Upcoming)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": {
+									"raw": "{{base_url}}/painter/bookings?filter=upcoming",
+									"host": ["{{base_url}}"],
+									"path": ["painter", "bookings"],
+									"query": [{ "key": "filter", "value": "upcoming" }]
+								}
+							}
+						},
+						{
+							"name": "List Bookings (Completed)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": {
+									"raw": "{{base_url}}/painter/bookings?filter=completed",
+									"host": ["{{base_url}}"],
+									"path": ["painter", "bookings"],
+									"query": [{ "key": "filter", "value": "completed" }]
+								}
+							}
+						},
+						{
+							"name": "Get Booking Detail",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/painter/bookings/{{booking_id}}"
+							}
+						},
+						{
+							"name": "Accept Booking",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/painter/bookings/{{booking_id}}/accept"
+							}
+						},
+						{
+							"name": "Reject Booking",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/painter/bookings/{{booking_id}}/reject"
+							}
+						},
+						{
+							"name": "Start Work",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/painter/bookings/{{booking_id}}/start"
+							}
+						},
+						{
+							"name": "Upload Before Images",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "work_notes", "value": "Wall condition before painting", "type": "text" },
+										{ "key": "before_images[]", "type": "file", "src": [], "description": "Required - 1 to 5 before photos" }
+									]
+								},
+								"url": "{{base_url}}/painter/bookings/{{booking_id}}/before-images"
+							}
+						},
+						{
+							"name": "Upload After Images & Complete",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "completion_notes", "value": "Work completed successfully", "type": "text" },
+										{ "key": "after_images[]", "type": "file", "src": [], "description": "Required - 1 to 5 after photos (before images must exist)" }
+									]
+								},
+								"url": "{{base_url}}/painter/bookings/{{booking_id}}/after-images"
+							}
+						},
+						{
+							"name": "Complete Work (Before + After Together)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{painter_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "completion_notes", "value": "Work completed successfully", "type": "text" },
+										{ "key": "before_images[]", "type": "file", "src": [], "description": "Optional if already uploaded via before-images" },
+										{ "key": "after_images[]", "type": "file", "src": [], "description": "Required - attach after work photos" }
+									]
+								},
+								"url": "{{base_url}}/painter/bookings/{{booking_id}}/complete"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Delivery Agent",
+			"item": [
+				{
+					"name": "Profile",
+					"item": [
+						{
+							"name": "Get Profile",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{delivery_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/delivery/profile"
+							}
+						},
+						{
+							"name": "Update Profile",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{delivery_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "name", "value": "Amit Delivery", "type": "text" },
+										{ "key": "phone", "value": "9876543212", "type": "text" },
+										{ "key": "avatar", "type": "file", "src": [], "disabled": true }
+									]
+								},
+								"url": "{{base_url}}/delivery/profile"
+							}
+						}
+					]
+				},
+				{
+					"name": "Orders",
+					"item": [
+						{
+							"name": "List Orders (Pending)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{delivery_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": {
+									"raw": "{{base_url}}/delivery/orders?filter=pending",
+									"host": ["{{base_url}}"],
+									"path": ["delivery", "orders"],
+									"query": [{ "key": "filter", "value": "pending" }]
+								}
+							}
+						},
+						{
+							"name": "List Orders (Completed)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{delivery_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": {
+									"raw": "{{base_url}}/delivery/orders?filter=completed",
+									"host": ["{{base_url}}"],
+									"path": ["delivery", "orders"],
+									"query": [{ "key": "filter", "value": "completed" }]
+								}
+							}
+						},
+						{
+							"name": "Get Order Detail",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{delivery_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/delivery/orders/{{order_id}}"
+							}
+						},
+						{
+							"name": "Accept Delivery",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{delivery_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/delivery/orders/{{order_id}}/accept"
+							}
+						},
+						{
+							"name": "Update Status (Picked Up / Out for Delivery)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{delivery_token}}", "type": "string" }] },
+								"method": "PATCH",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"picked_up\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{base_url}}/delivery/orders/{{order_id}}/status"
+							}
+						},
+						{
+							"name": "Complete Delivery (Upload Proof)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{delivery_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "delivery_proof", "type": "file", "src": [], "description": "Required - delivery proof photo" }
+									]
+								},
+								"url": "{{base_url}}/delivery/orders/{{order_id}}/complete"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Vendor",
+			"item": [
+				{
+					"name": "Orders",
+					"item": [
+						{
+							"name": "List Orders (Active)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{vendor_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": {
+									"raw": "{{base_url}}/vendor/orders?filter=active",
+									"host": ["{{base_url}}"],
+									"path": ["vendor", "orders"],
+									"query": [{ "key": "filter", "value": "active" }]
+								}
+							}
+						},
+						{
+							"name": "List Orders (Past)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{vendor_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": {
+									"raw": "{{base_url}}/vendor/orders?filter=past",
+									"host": ["{{base_url}}"],
+									"path": ["vendor", "orders"],
+									"query": [{ "key": "filter", "value": "past" }]
+								}
+							}
+						},
+						{
+							"name": "Get Order Detail",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{vendor_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/vendor/orders/{{order_id}}"
+							}
+						},
+						{
+							"name": "Mark Order Packed",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{vendor_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/vendor/orders/{{order_id}}/pack"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
