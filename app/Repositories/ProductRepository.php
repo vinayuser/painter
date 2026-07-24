@@ -15,7 +15,7 @@ class ProductRepository extends BaseRepository
     public function searchAndFilter(array $filters, int $perPage = 15): LengthAwarePaginator
     {
         $query = $this->model->newQuery()
-            ->with(['category', 'images'])
+            ->with(['category', 'images', 'vendor'])
             ->where('is_active', true);
 
         if (! empty($filters['search'])) {
@@ -28,6 +28,10 @@ class ProductRepository extends BaseRepository
 
         if (! empty($filters['category_id'])) {
             $query->where('category_id', $filters['category_id']);
+        }
+
+        if (array_key_exists('featured', $filters) && $filters['featured'] !== null && $filters['featured'] !== '') {
+            $query->where('is_featured', filter_var($filters['featured'], FILTER_VALIDATE_BOOLEAN));
         }
 
         if (! empty($filters['min_price'])) {
@@ -47,5 +51,15 @@ class ProductRepository extends BaseRepository
         }
 
         return $query->paginate($perPage);
+    }
+
+    public function featured(int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->model->newQuery()
+            ->with(['category', 'images', 'vendor'])
+            ->where('is_active', true)
+            ->where('is_featured', true)
+            ->latest()
+            ->paginate($perPage);
     }
 }

@@ -33,11 +33,18 @@ class ProductResource extends Resource
                 ->maxLength(255)
                 ->live(onBlur: true)
                 ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug($state))),
-            Forms\Components\TextInput::make('slug')->required()->maxLength(255)->unique(ignoreRecord: true),
+            Forms\Components\TextInput::make('slug')
+                ->required()
+                ->maxLength(255)
+                ->unique(
+                    ignoreRecord: true,
+                    modifyRuleUsing: fn ($rule) => $rule->whereNull('deleted_at'),
+                ),
             Forms\Components\Textarea::make('description')->columnSpanFull(),
             Forms\Components\TextInput::make('price')->numeric()->required()->prefix('₹'),
             Forms\Components\TextInput::make('stock_quantity')->numeric()->required()->default(0),
             Forms\Components\Toggle::make('is_active')->default(true),
+            Forms\Components\Toggle::make('is_featured')->label('Featured product')->default(false),
             Forms\Components\Repeater::make('images')
                 ->relationship()
                 ->schema([
@@ -50,7 +57,9 @@ class ProductResource extends Resource
                     Forms\Components\TextInput::make('sort_order')->numeric()->default(0),
                 ])
                 ->columnSpanFull()
-                ->collapsible(),
+                ->collapsible()
+                ->defaultItems(1)
+                ->maxItems(8),
         ]);
     }
 
@@ -62,12 +71,14 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('category.name')->sortable(),
                 Tables\Columns\TextColumn::make('price')->money('INR')->sortable(),
                 Tables\Columns\TextColumn::make('stock_quantity')->sortable(),
+                Tables\Columns\IconColumn::make('is_featured')->boolean()->label('Featured'),
                 Tables\Columns\IconColumn::make('is_active')->boolean(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('category_id')
                     ->label('Category')
                     ->relationship('category', 'name'),
+                Tables\Filters\TernaryFilter::make('is_featured')->label('Featured'),
                 Tables\Filters\TernaryFilter::make('is_active'),
             ])
             ->actions([

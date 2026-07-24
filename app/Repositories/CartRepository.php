@@ -14,10 +14,22 @@ class CartRepository extends BaseRepository
 
     public function getUserCart(int $userId): Collection
     {
-        return $this->model->newQuery()
+        $items = $this->model->newQuery()
             ->with(['product.images', 'product.vendor'])
             ->where('user_id', $userId)
             ->get();
+
+        // Drop cart rows whose product was soft-deleted or removed.
+        $staleIds = $items
+            ->filter(fn (CartItem $item) => ! $item->product)
+            ->pluck('id');
+
+        if ($staleIds->isNotEmpty()) {
+            $this->model->newQuery()->whereIn('id', $staleIds)->delete();
+            $items = $items->reject(fn (CartItem $item) => ! $item->product)->values();
+        }
+
+        return $items;
     }
 
     public function findUserItem(int $userId, int $productId): ?CartItem

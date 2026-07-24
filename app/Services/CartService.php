@@ -19,9 +19,9 @@ class CartService
 
     public function addItem(int $userId, int $productId, int $quantity, bool $replace = false): CartItem
     {
-        $product = Product::query()->with('vendor')->findOrFail($productId);
+        $product = Product::query()->with('vendor')->find($productId);
 
-        if (! $product->is_active) {
+        if (! $product || ! $product->is_active) {
             throw new \RuntimeException('Product is unavailable.');
         }
 

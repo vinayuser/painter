@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function (): void {
     // Public product browsing
     Route::get('products', [ProductController::class, 'index']);
+    Route::get('products/featured', [ProductController::class, 'featured']);
     Route::get('products/{id}', [ProductController::class, 'show']);
     Route::get('categories', [ProductController::class, 'categories']);
     Route::get('categories/{categoryId}/products', [ProductController::class, 'byCategory']);

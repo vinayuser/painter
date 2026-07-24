@@ -66,7 +66,7 @@ Admin panel → **Notifications** can broadcast to any global role channel.
 
 **Verify OTP response includes:**
 - `access_token` — JWT bearer token
-- `expires_in` — token lifetime in **seconds** (default: 7 days = 604800)
+- `expires_in` — token lifetime in **seconds** (default: 30 days = 2592000)
 
 ### Token lifecycle (important for mobile apps)
 
@@ -74,8 +74,8 @@ JWT tokens **expire by design**. After expiry, protected APIs return `401`.
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
-| `JWT_TTL` | 10080 min (7 days) | Access token validity |
-| `JWT_REFRESH_TTL` | 43200 min (30 days) | How long refresh is allowed after login |
+| `JWT_TTL` | 43200 min (30 days) | Access token validity |
+| `JWT_REFRESH_TTL` | 86400 min (60 days) | How long refresh is allowed after login |
 
 **When token expires:**
 1. Call `POST /auth/refresh` with the old token in `Authorization: Bearer {token}` — returns a new token (works even if token is expired, within refresh window)
@@ -111,7 +111,8 @@ JWT tokens **expire by design**. After expiry, protected APIs return `401`.
 ### Products (also public)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/products` | List all products (search, filter, paginate) |
+| GET | `/products` | List all products (search, filter, paginate). Optional `featured=1` |
+| GET | `/products/featured` | Featured products only (public, paginated) |
 | GET | `/products/{id}` | Product detail |
 | GET | `/categories` | List categories with product count |
 | GET | `/categories/{id}/products` | Products by category |

@@ -60,6 +60,39 @@
 
 <div class="card">
     <div class="card-head">
+        <h3>⭐ Featured products</h3>
+        <a href="{{ route('vendor.products.index') }}" class="link-sm">Manage</a>
+    </div>
+    @if($featuredProducts->isEmpty())
+        <p class="empty-hint" style="padding:1.25rem;">No featured products yet. Edit a product and turn on <strong>Featured</strong>.</p>
+    @else
+        <div class="featured-products-grid" style="padding:1rem;">
+            @foreach($featuredProducts as $product)
+                @php $thumb = $product->images->firstWhere('is_primary', true) ?? $product->images->first(); @endphp
+                <a href="{{ route('vendor.products.edit', $product) }}" class="featured-product-card">
+                    <div class="featured-product-thumb">
+                        @if($thumb)
+                            <img src="{{ asset('storage/'.$thumb->image_path) }}" alt="{{ $product->name }}">
+                        @else
+                            <div class="featured-product-placeholder">🛢️</div>
+                        @endif
+                        <span class="badge badge-featured featured-product-badge">Featured</span>
+                    </div>
+                    <div class="featured-product-body">
+                        <strong class="featured-product-name">{{ $product->name }}</strong>
+                        <div class="featured-product-footer">
+                            <span class="featured-product-price">₹{{ number_format($product->price, 0) }}</span>
+                            <span class="text-muted" style="font-size:12px;">Stock {{ $product->stock_quantity }}</span>
+                        </div>
+                    </div>
+                </a>
+            @endforeach
+        </div>
+    @endif
+</div>
+
+<div class="card">
+    <div class="card-head">
         <h3>Recent orders</h3>
         <a href="{{ route('vendor.orders.index') }}" class="link-sm">View all</a>
     </div>

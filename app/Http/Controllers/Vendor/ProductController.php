@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Http\Controllers\Concerns\ManagesProductImages;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -13,10 +13,12 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    use ManagesProductImages;
+
     public function index(Request $request): View
     {
         $products = Product::query()
-            ->with('category')
+            ->with(['category', 'images'])
             ->where('vendor_id', auth()->id())
             ->when($request->search, fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->latest()
@@ -38,14 +40,7 @@ class ProductController extends Controller
         $data = $this->validateProduct($request);
         $data['vendor_id'] = auth()->id();
         $product = Product::query()->create($data);
-
-        if ($request->hasFile('image')) {
-            ProductImage::query()->create([
-                'product_id' => $product->id,
-                'image_path' => $request->file('image')->store('products', 'public'),
-                'is_primary' => true,
-            ]);
-        }
+        $this->syncProductImages($request, $product);
 
         return redirect()->route('vendor.products.index')->with('success', 'Product created successfully.');
     }
@@ -65,15 +60,7 @@ class ProductController extends Controller
     {
         $this->authorizeProduct($product);
         $product->update($this->validateProduct($request, $product));
-
-        if ($request->hasFile('image')) {
-            $product->images()->delete();
-            ProductImage::query()->create([
-                'product_id' => $product->id,
-                'image_path' => $request->file('image')->store('products', 'public'),
-                'is_primary' => true,
-            ]);
-        }
+        $this->syncProductImages($request, $product->fresh('images'));
 
         return redirect()->route('vendor.products.index')->with('success', 'Product updated successfully.');
     }
@@ -83,7 +70,10 @@ class ProductController extends Controller
         $this->authorizeProduct($product);
         $product->delete();
 
-        return redirect()->route('vendor.products.index')->with('success', 'Product deleted successfully.');
+        return redirect()->route('vendor.products.index')->with(
+            'success',
+            'Product removed from catalog. Existing orders are unchanged; cart items for this product were cleared.'
+        );
     }
 
     private function authorizeProduct(Product $product): void
@@ -102,13 +92,22 @@ class ProductController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'stock_quantity' => ['required', 'integer', 'min:0'],
             'is_active' => ['boolean'],
+            'is_featured' => ['boolean'],
+            'images' => ['nullable', 'array', 'max:8'],
+            'images.*' => ['image', 'max:5120'],
             'image' => ['nullable', 'image', 'max:5120'],
+            'remove_image_ids' => ['nullable', 'array'],
+            'remove_image_ids.*' => ['integer'],
+            'primary_image_id' => ['nullable', 'integer'],
         ]);
 
-        $data['is_active'] = $request->boolean('is_active', true);
+        $data['is_active'] = $request->boolean('is_active');
+        $data['is_featured'] = $request->boolean('is_featured');
         if (! $product) {
             $data['slug'] = Str::slug($data['name']).'-'.Str::random(4);
         }
+
+        unset($data['images'], $data['image'], $data['remove_image_ids'], $data['primary_image_id']);
 
         return $data;
     }

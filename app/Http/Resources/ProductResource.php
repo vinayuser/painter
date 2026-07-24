@@ -17,6 +17,7 @@ class ProductResource extends JsonResource
             'price' => (float) $this->price,
             'stock_quantity' => $this->stock_quantity,
             'is_active' => $this->is_active,
+            'is_featured' => (bool) $this->is_featured,
             'category' => new CategoryResource($this->whenLoaded('category')),
             'vendor' => new VendorSummaryResource($this->whenLoaded('vendor')),
             'images' => ProductImageResource::collection($this->whenLoaded('images')),

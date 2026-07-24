@@ -82,6 +82,13 @@ class DashboardController extends Controller
                 ->latest()
                 ->limit(5)
                 ->get(),
+            'featured_products' => Product::query()
+                ->with(['category', 'vendor', 'images'])
+                ->where('is_featured', true)
+                ->latest()
+                ->limit(12)
+                ->get(),
+            'featured_count' => Product::query()->where('is_featured', true)->count(),
         ]);
     }
 

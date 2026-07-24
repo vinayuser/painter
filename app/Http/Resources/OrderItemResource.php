@@ -16,7 +16,10 @@ class OrderItemResource extends JsonResource
             'unit_price' => (float) $this->unit_price,
             'quantity' => $this->quantity,
             'subtotal' => (float) $this->subtotal,
-            'product' => new ProductResource($this->whenLoaded('product')),
+            'product' => $this->when(
+                $this->relationLoaded('product') && $this->product,
+                fn () => new ProductResource($this->product)
+            ),
         ];
     }
 }

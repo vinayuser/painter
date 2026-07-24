@@ -76,7 +76,16 @@
     </div>
     <div class="col-lg-2 col-md-4 col-6">
         <div class="info-box mb-3">
-            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-check-circle"></i></span>
+            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-star"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Featured</span>
+                <span class="info-box-number">{{ $featured_count }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="info-box mb-3">
+            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-check-circle"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Delivered</span>
                 <span class="info-box-number">{{ $stats['delivered_orders'] }}</span>
@@ -100,6 +109,54 @@
                 <span class="info-box-number">{{ $stats['active_bookings'] }}</span>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="card card-outline card-warning">
+    <div class="card-header border-0">
+        <h3 class="card-title"><i class="fas fa-star mr-1 text-warning"></i> Featured Products</h3>
+        <div class="card-tools">
+            <a href="{{ route('admin.products.index', ['featured' => 1]) }}" class="btn btn-tool btn-sm">Manage featured</a>
+            <a href="{{ route('admin.products.create') }}" class="btn btn-tool btn-sm"><i class="fas fa-plus"></i></a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if($featured_products->isEmpty())
+            <p class="text-muted mb-0 text-center py-4">
+                No featured products yet.
+                <a href="{{ route('admin.products.index') }}">Mark products as featured</a>
+                to show them here and on <code>GET /api/v1/products/featured</code>.
+            </p>
+        @else
+            <div class="featured-products-grid">
+                @foreach($featured_products as $product)
+                    @php $thumb = $product->images->firstWhere('is_primary', true) ?? $product->images->first(); @endphp
+                    <a href="{{ route('admin.products.show', $product) }}" class="featured-product-card">
+                        <div class="featured-product-thumb">
+                            @if($thumb)
+                                <img src="{{ asset('storage/'.$thumb->image_path) }}" alt="{{ $product->name }}">
+                            @else
+                                <div class="featured-product-placeholder"><i class="fas fa-fill-drip"></i></div>
+                            @endif
+                            <span class="badge badge-featured featured-product-badge">Featured</span>
+                        </div>
+                        <div class="featured-product-body">
+                            <strong class="featured-product-name">{{ $product->name }}</strong>
+                            <div class="featured-product-meta text-muted text-sm">
+                                {{ $product->category?->name }}
+                                @if($product->vendor)
+                                    · {{ $product->vendor->business_name ?: $product->vendor->name }}
+                                @endif
+                            </div>
+                            <div class="featured-product-footer">
+                                <span class="featured-product-price">₹{{ number_format($product->price, 0) }}</span>
+                                <span class="text-muted text-sm">Stock {{ $product->stock_quantity }}</span>
+                            </div>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        @endif
     </div>
 </div>
 

@@ -19,12 +19,13 @@
 <div class="row">
     <div class="col-md-4">
         @if($product->images->isNotEmpty())
+            @php $primary = $product->primaryListingImage(); @endphp
             <div class="card">
                 <div class="card-body text-center">
-                    <img src="{{ asset('storage/'.$product->images->first()->image_path) }}" class="img-fluid rounded" alt="{{ $product->name }}" style="max-height:280px;">
+                    <img src="{{ asset('storage/'.$primary->image_path) }}" class="img-fluid rounded" alt="{{ $product->name }}" style="max-height:280px;">
                     @if($product->images->count() > 1)
                         <div class="row mt-2">
-                            @foreach($product->images->skip(1) as $img)
+                            @foreach($product->images->where('id', '!=', $primary->id) as $img)
                                 <div class="col-4"><img src="{{ asset('storage/'.$img->image_path) }}" class="img-fluid rounded product-thumb" alt=""></div>
                             @endforeach
                         </div>
@@ -39,6 +40,7 @@
                 <hr>
                 <p class="mb-1"><strong>Category:</strong> <a href="{{ route('admin.categories.show', $product->category) }}">{{ $product->category->name }}</a></p>
                 <p class="mb-1"><strong>Vendor:</strong> {{ $product->vendor?->business_name ?? $product->vendor?->name ?? 'Platform' }}</p>
+                <p class="mb-1"><strong>Featured:</strong> {{ $product->is_featured ? 'Yes' : 'No' }}</p>
                 <p class="mb-0"><strong>Status:</strong> {{ $product->is_active ? 'Active' : 'Inactive' }}</p>
             </div>
         </div>

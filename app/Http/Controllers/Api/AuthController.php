@@ -23,6 +23,9 @@ use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 
 class AuthController extends Controller
 {
+    /** Access token lifetime in minutes (30 days). Forced at issue-time so Hostinger config cache cannot shorten it. */
+    private const ACCESS_TOKEN_TTL_MINUTES = 60 * 24 * 30;
+
     public function __construct(
         private readonly TwoFactorService $twoFactor,
         private readonly FcmService $fcm,
@@ -140,7 +143,7 @@ class AuthController extends Controller
             $this->fcm->saveToken($user, $data['fcm_token']);
         }
 
-        $token = auth('api')->login($user->fresh());
+        $token = $this->issueAccessToken($user->fresh());
 
         return $this->respondWithToken($token, $user->fresh());
     }
@@ -216,6 +219,7 @@ class AuthController extends Controller
     public function refresh(): JsonResponse
     {
         try {
+            auth('api')->factory()->setTTL(self::ACCESS_TOKEN_TTL_MINUTES);
             $newToken = auth('api')->refresh();
             $user = auth('api')->setToken($newToken)->user();
 
@@ -235,6 +239,13 @@ class AuthController extends Controller
                 'error' => 'token_invalid',
             ], 401);
         }
+    }
+
+    protected function issueAccessToken(User $user): string
+    {
+        auth('api')->factory()->setTTL(self::ACCESS_TOKEN_TTL_MINUTES);
+
+        return auth('api')->login($user);
     }
 
     protected function sendLoginOtp(string $phone, UserRole $role): JsonResponse
@@ -276,10 +287,22 @@ class AuthController extends Controller
             $user->load('portfolios');
         }
 
+        $expiresIn = self::ACCESS_TOKEN_TTL_MINUTES * 60;
+
+        try {
+            $exp = (int) auth('api')->setToken($token)->payload()->get('exp');
+            if ($exp > 0) {
+                $expiresIn = max(0, $exp - time());
+            }
+        } catch (JWTException) {
+            // keep calculated TTL
+        }
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 60,
+            'expires_in' => $expiresIn,
+            'expires_at' => now()->addSeconds($expiresIn)->toIso8601String(),
             'user' => new UserResource($user),
         ]);
     }

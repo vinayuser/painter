@@ -140,13 +140,19 @@ class PainterBookingService
 
         return $booking;
     }
-    {
-        $typeValue = $type instanceof BookingImageType ? $type->value : $type;
-        $path = $file->store("bookings/{$booking->id}", 'public');
+    
+    protected function storeImage(
+            PainterBooking $booking,
+            UploadedFile $file,
+            BookingImageType|string $type
+        ): void {
+            $typeValue = $type instanceof BookingImageType ? $type->value : $type;
 
-        $booking->images()->create([
-            'image_path' => $path,
-            'type' => $typeValue,
-        ]);
+            $path = $file->store("bookings/{$booking->id}", 'public');
+
+            $booking->images()->create([
+                'image_path' => $path,
+                'type' => $typeValue,
+            ]);
     }
 }

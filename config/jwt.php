@@ -101,7 +101,8 @@ return [
     |
     */
 
-    'ttl' => env('JWT_TTL', 60),
+    // Minutes — default 30 days. Cast to int (env values are strings; empty => default).
+    'ttl' => (int) (env('JWT_TTL') ?: 60 * 24 * 30),
 
     /*
     |--------------------------------------------------------------------------
@@ -120,7 +121,8 @@ return [
     |
     */
 
-    'refresh_ttl' => env('JWT_REFRESH_TTL', 20160),
+    // Minutes — default 60 days (must be >= ttl).
+    'refresh_ttl' => (int) (env('JWT_REFRESH_TTL') ?: 60 * 24 * 60),
 
     /*
     |--------------------------------------------------------------------------

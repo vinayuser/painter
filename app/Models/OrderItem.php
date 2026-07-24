@@ -25,6 +25,7 @@ class OrderItem extends Model
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        // Keep historical product details after soft-delete from catalog.
+        return $this->belongsTo(Product::class)->withTrashed();
     }
 }

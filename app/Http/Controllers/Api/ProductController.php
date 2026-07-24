@@ -19,7 +19,16 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $products = $this->productRepository->searchAndFilter(
-            $request->only(['search', 'category_id', 'min_price', 'max_price', 'sort_by', 'sort_dir']),
+            $request->only(['search', 'category_id', 'min_price', 'max_price', 'sort_by', 'sort_dir', 'featured']),
+            (int) $request->get('per_page', 15)
+        );
+
+        return ProductResource::collection($products)->response();
+    }
+
+    public function featured(Request $request): JsonResponse
+    {
+        $products = $this->productRepository->featured(
             (int) $request->get('per_page', 15)
         );
 
@@ -29,7 +38,7 @@ class ProductController extends Controller
     public function show(int $id): JsonResponse
     {
         $product = $this->productRepository->findOrFail($id);
-        $product->load(['category', 'images']);
+        $product->load(['category', 'images', 'vendor']);
 
         if (! $product->is_active) {
             return response()->json(['message' => 'Product not found.'], 404);
